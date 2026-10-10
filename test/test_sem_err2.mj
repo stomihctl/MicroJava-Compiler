@@ -1,0 +1,10 @@
+program test_sem_err3
+int x;
+char c;
+{
+    void main() {
+        x = 'a';
+        c = 5;
+        x = true;
+    }
+}

@@ -1,0 +1,18 @@
+// Test: oporavak od sintaksnih gresaka koji USPEVA (postoji ";" posle greske,
+// za razliku od prethodnog testa gde nije bilo vise ";" pa je oporavak bio nemoguc)
+
+program test_recovery_success
+
+const int a = 5
+const int b = 10;
+
+{
+	void main()
+	int x;
+	{
+		x = a + b
+		x = x * 2;
+		print(x);
+		print(eol);
+	}
+}

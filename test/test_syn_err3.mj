@@ -1,0 +1,9 @@
+program test_err3
+{
+    void main()
+        int x;
+    {
+        5 = x;
+        x = ;
+    }
+}

@@ -1,0 +1,10 @@
+program TestSemantickaGreska
+{
+    void main()
+        int nepostojeciObjekat;
+    {
+        // Očekivana SEMANTIČKA greška: 
+        // Pokušaj instanciranja ugrađenog tipa kao da je klasa (bez uglastih zagrada)
+        nepostojeciObjekat = new int;
+    }
+}

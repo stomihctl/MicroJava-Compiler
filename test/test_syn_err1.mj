@@ -1,0 +1,6 @@
+program test_err1
+int x
+{
+    void main() {
+    }
+}

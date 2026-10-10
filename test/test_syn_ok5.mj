@@ -1,0 +1,10 @@
+program test5
+int x;
+int y;
+{
+    void main()
+        int a;
+    {
+        a = 5;
+    }
+}

@@ -1,0 +1,6 @@
+program test_err4
+int niz[;
+{
+    void main() {
+    }
+}qqq

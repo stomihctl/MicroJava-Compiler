@@ -1,0 +1,9 @@
+program test_sem_err5
+int x;
+{
+    void main() {
+        x = new int[0];
+        x.length;
+        x[0] = 1;
+    }
+}

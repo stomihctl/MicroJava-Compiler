@@ -1,0 +1,9 @@
+program test_sem_err1
+{
+    void main()
+        int x;
+    {
+        y = 5;
+        x = nepostoji + 1;
+    }
+}

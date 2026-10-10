@@ -1,0 +1,34 @@
+program TestOstalo
+
+int globalniNiz[];
+
+{
+    // 1. Testiranje formalnog parametra niza: void f(int a[])
+    void ispisiPodatke(int prosledjeniNiz[])
+        int duzina;
+    {
+        // 2. Testiranje ugrađene funkcije len(...)
+        duzina = len(prosledjeniNiz);
+        
+        // Treba da ispiše 3
+        print(duzina);
+        print(eol);
+    }
+
+    void main()
+        char znak;
+    {
+        globalniNiz = new int[3];
+
+        // Poziv funkcije kojoj se prosleđuje niz
+        ispisiPodatke(globalniNiz);
+
+        // 3. Testiranje ugrađene funkcije chr(...) -> ASCII 43 je '+'
+        znak = chr(43);
+
+        // 4. Testiranje print(charExpr, width) 
+        // Treba da ispiše "    +"
+        print(znak, 5);
+        print(eol);
+    }
+}

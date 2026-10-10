@@ -1,0 +1,49 @@
+program test_sem_ok1
+
+const int MAKS = 100;
+const char EOL = '\n';
+const bool TACNO = true;
+
+enum Ocena { PAO, SEST = 6, SEDAM, OSAM, DEVET, DESET }
+
+int brojac;
+char slovo;
+int niz[];
+char nizch[];
+
+{
+    void main()
+        int lok;
+        bool b;
+        Ocena oc;
+    {
+        lok = MAKS;
+        slovo = EOL;
+        b = TACNO;
+        oc = Ocena.PAO;
+        oc = Ocena.DESET;
+
+        niz = new int[10];
+        niz[0] = 5;
+        niz[1] = niz[0];
+        lok = niz.length;
+
+        nizch = new char[5];
+        nizch[0] = 'a';
+        lok = ord(nizch[0]);
+
+        brojac = lok + 1;
+        brojac = lok - 1;
+        brojac = lok * 2;
+        brojac = lok / 2;
+        brojac = lok % 3;
+        brojac = -lok;
+
+        print(lok);
+        print(slovo);
+        read(lok);
+        read(slovo);
+
+        lok = b ? MAKS : 0;
+    }
+}

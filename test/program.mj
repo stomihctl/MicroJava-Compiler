@@ -1,0 +1,69 @@
+// Test: chr, len, ord, formalni parametri niza (int i char), print(charExpr, width)
+program test_stdlib_arrparam
+
+const int n = 5;
+
+{
+	void obradiNiz(int niz[], int duzina)
+	{
+		print(niz[0]);
+		print(eol);
+		print(duzina);
+		print(eol);
+	}
+
+	void oba(int p[], int q[])
+	int suma;
+	{
+		suma = p[0] + q[0];
+		print(suma);
+		print(eol);
+	}
+
+	void ispisiChar(char c[])
+	{
+		print(c[0], 3);
+		print(eol);
+	}
+
+	void main()
+	int a[];
+	int a2[];
+	char b[];
+	int x;
+	char y;
+	{
+		a = new int[n];
+		a[0] = 65;
+		a[1] = 66;
+
+		a2 = new int[n];
+		a2[0] = 4;
+
+		b = new char[n];
+		b[0] = 'Q';
+		b[1] = 'R';
+
+		obradiNiz(a, n);      // testira FormParsBracket (int niz[])
+		oba(a, a2);            // testira FormParsBracket + TypeIdentListParamBracket (dva niza)
+		ispisiChar(b);         // testira formalni char niz
+
+		x = ord('A');          // predeklarisano ord
+		print(x);
+		print(eol);
+
+		y = chr(66);           // predeklarisano chr
+		print(y);
+		print(eol);
+
+		x = len(a);            // predeklarisano len
+		print(x);
+		print(eol);
+
+		print(x, 6);           // print(intExpr, width) - vec testirano ranije, ponovljeno radi potpunosti
+		print(eol);
+
+		print(y, 4);           // print(charExpr, width) - NIKAD ranije testirano
+		print(eol);
+	}
+}

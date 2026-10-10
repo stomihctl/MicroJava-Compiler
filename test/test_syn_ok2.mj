@@ -1,0 +1,22 @@
+program test2
+
+const int MAX = 10;
+const char SLOVO = 'a';
+const bool FLAG = true;
+
+int x;
+char c;
+bool b;
+int niz[];
+
+enum Boje { CRVENA, ZELENA = 5, PLAVA }
+
+{
+    void main()
+        int lokalna;
+        char lok2;
+    {
+        lokalna = 5;
+        lok2 = 'x';
+    }
+}

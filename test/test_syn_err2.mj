@@ -1,0 +1,7 @@
+program test_err2
+{
+    void main() {
+        int x;
+        x = 5;
+    
+}

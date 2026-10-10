@@ -1,0 +1,357 @@
+package rs.ac.bg.etf.pp1;
+
+import java_cup.runtime.*;
+import org.apache.log4j.*;
+
+// import java.io.*;
+import rs.ac.bg.etf.pp1.ast.*;
+
+
+parser code {:
+	
+	boolean errorDetected = false;
+	
+	Logger log = Logger.getLogger(getClass());
+   
+   
+    // slede redefinisani metodi za prijavu gresaka radi izmene teksta poruke
+     
+    public void report_fatal_error(String message, Object info) throws java.lang.Exception {
+      done_parsing();
+      report_error(message, info);
+    }
+  
+    public void syntax_error(Symbol cur_token) {
+        report_error("\nSintaksna greska", cur_token);
+    }
+  
+    public void unrecovered_syntax_error(Symbol cur_token) throws java.lang.Exception {
+        report_fatal_error("Fatalna greska, parsiranje se ne moze nastaviti", cur_token);
+    }
+
+    public void report_error(String message, Object info) {
+    	errorDetected = true;
+    	StringBuilder msg = new StringBuilder(message); 
+    	if (info instanceof Symbol)
+            msg.append (" na liniji ").append(((Symbol)info).left);
+        log.error(msg.toString());
+    }
+    
+    public void report_info(String message, Object info) {
+    	StringBuilder msg = new StringBuilder(message); 
+    	if (info instanceof Symbol)
+            msg.append (" na liniji ").append(((Symbol)info).left);
+        log.info(msg.toString());
+    }
+    
+:}
+
+scan with {:
+	Symbol s = this.getScanner().next_token();
+	if (s != null && s.value != null) 
+		log.info(s.toString() + " " + s.value.toString());
+	return s;
+:}
+
+/* ================= TERMINALI ================= */
+/* NAPOMENA (Nivo A, Julski rok):
+   - SWITCH/CASE, IF/ELSE, BREAK, CONTINUE, FOR uklonjeni (Nivo B)
+   - CLASS/ABSTRACT/EXTENDS uklonjeni (Nivo C)
+   - AND/OR (&&, ||) uklonjeni - Condition/CondTerm se ne koriste u Nivou A,
+     ternarni operator koristi samo CondFact
+   - FINDANY dodat (julska izmena za Nivo A) */
+terminal PROGRAM, CONST, NEW, PRINT, READ, VOID, LENGTH, FINDANY, ENUM;
+terminal PLUS, MINUS, MUL, DIV, MOD, EQ, NEQ, GT, GE, LT, LE, ASSIGN, INC, DEC, QUESTION;
+terminal SEMI, COMMA, DOT, COLON, LPAREN, RPAREN, LBRACE, RBRACE, LBRACKET, RBRACKET;
+
+terminal String BOOL_CONST;
+terminal Integer NUM_CONST ;
+terminal String IDENT ;
+terminal String CHAR_CONST;
+
+nonterminal EnumDecl, EqNumConst, EnumIdentList;
+
+nonterminal VarDecl, LRBracket, DeclList, VarIdentList;
+
+nonterminal ConstDecl, ConstIdentList;
+
+nonterminal VarDeclList, MethodDeclList, FormPars, TypeIdentList;
+nonterminal Statement, StatementList;
+
+nonterminal DesignatorStatement, FactDes, ActParentsOpt;
+nonterminal ActPars, ExprList;
+nonterminal AddopTermList;
+nonterminal MulFactList;
+nonterminal Assignop, Relop, Addop, Mulop;
+nonterminal TernHelper, TernHelper2, NegHelper;
+
+nonterminal rs.etf.pp1.symboltable.concepts.Obj ProgName, Program, MethodDecl, MethodTypeName, Designator;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, Term, Factor, MethodTypeDecl, Expr, ExprArithmetic, ListIdentLength, ConstOpt, ExprTern, CondFact;
+
+/* [] 0 ili 1 	{} 0 ili vise lista	 () grupisanje */
+
+Program ::= (Program) PROGRAM ProgName:p DeclList LBRACE MethodDeclList RBRACE;
+
+ProgName ::= (ProgName) IDENT:progName;
+
+DeclList ::= (DeclListParamVar) DeclList VarDecl
+		  |
+		  (DeclListParamConst) DeclList ConstDecl
+		  |
+		  (DeclListParamEnum) DeclList EnumDecl
+		  |
+		  (DeclListNoParam) /* epsilon */
+		  |
+		  error SEMI
+	      {: parser.report_error("Greska u deklaraciji (globalna promenljiva/const), preskacem do ;", null); :}
+	      |
+	      error COMMA
+	      {: parser.report_error("Greska u deklaraciji, preskacem do sledece deklaracije (,)", null); :}
+		  ;
+
+MethodDeclList ::= (MethodDeclListParam) MethodDeclList MethodDecl
+				|
+				(MethodDeclListNoParam) /* epsilon */
+				;
+			 
+MethodDecl ::= (MethodDeclTypeNoFormPars) MethodTypeName LPAREN RPAREN VarDeclList LBRACE StatementList RBRACE
+			|
+			(MethodDeclTypeFormPars) MethodTypeName LPAREN FormPars RPAREN VarDeclList LBRACE StatementList RBRACE
+			;
+			
+MethodTypeName ::= (MethodTypeName) MethodTypeDecl IDENT:methName;
+			
+MethodTypeDecl ::= (MethodTypeDeclType) Type: type
+				|
+				(MethodTypeDeclVoid) VOID
+				;
+
+/* frompars start */
+FormPars ::= (FormParsBracket) Type IDENT LBRACKET RBRACKET TypeIdentList
+		   |
+		   (FormParsNoBracket) Type IDENT TypeIdentList
+		   ;
+		   
+TypeIdentList ::= (TypeIdentListParamBracket) TypeIdentList COMMA Type IDENT LBRACKET RBRACKET
+				|
+				(TypeIdentListParamNoBracket) TypeIdentList COMMA Type IDENT
+				|
+		   		(TypeIdentListNoParam) /* epsilon */
+		   		;
+/* frompars end */
+
+/* statement start */
+
+StatementList ::= (StatementListParam) StatementList Statement
+				|
+				(StatementListNoParam) /* epsilon */
+				;
+
+Statement ::= (StatementDesigState) DesignatorStatement SEMI
+			|
+			(StatementDesigRead) READ LPAREN Designator RPAREN SEMI
+			|
+			(StatementPrintNoNum) PRINT LPAREN Expr RPAREN SEMI
+			|
+			(StatementPrintNum) PRINT LPAREN Expr COMMA NUM_CONST:numConst RPAREN SEMI
+			|
+			error SEMI:l 
+			{: parser.report_error("Sintaksa greska u iskazu, preskacem do ;", null); :}
+			;
+
+/* statement end */
+
+/* var decl */
+VarDeclList ::= (VarDeclListParam) VarDeclList VarDecl
+			 |
+			 (VarDeclListNoParam) /* epsilon */
+			 ;
+
+/* enum decl */
+EnumDecl ::= (EnumDecl) ENUM IDENT LBRACE IDENT EqNumConst EnumIdentList RBRACE;
+
+EqNumConst ::= (EqNumConstOne) ASSIGN NUM_CONST
+			|
+			(EqNumConstNone) /* epsilon */
+			;
+
+EnumIdentList ::= (EnumIdentListParam) EnumIdentList COMMA IDENT EqNumConst
+				|
+				(EnumIdentListNoParam) /* epsilon */
+				;
+				
+/* end enum decl */
+
+/*const decl*/
+ConstDecl ::= (ConstDecl) CONST Type IDENT ASSIGN ConstOpt ConstIdentList SEMI;
+
+ConstOpt ::= (ConstOptNum) NUM_CONST 
+		  |
+		  (ConstOptChar) CHAR_CONST
+		  |
+		  (ConstOptBool) BOOL_CONST
+		  ;
+		  
+ConstIdentList ::= (ConstIdentListParam) ConstIdentList COMMA IDENT ASSIGN ConstOpt
+				|
+				(ConstIdentListNoParam) /* epsilon */
+				;
+/* const decl end */			
+
+VarDecl ::= (VarDecl) Type:varType IDENT:varName LRBracket VarIdentList SEMI;
+
+
+LRBracket ::= (LRBracketOnce) LBRACKET RBRACKET
+			|
+			(LRBracketNone) /* epsilon */
+			;
+
+VarIdentList ::= (VarIdentListParams) VarIdentList COMMA IDENT LRBracket
+			|
+			(VarIdentListNoParams) /* epsilon */
+			;
+/* var decl end */
+
+/* basic */
+
+Type ::= (Type) IDENT:typeName;
+
+/* ------------------------------------------------------------------------------------------------------------------------------*/
+
+DesignatorStatement ::= (DesignatorStatementAssExpr) Designator Assignop Expr
+					 |
+					 (DesignatorStatementActPars) Designator LPAREN ActPars RPAREN
+					 |
+					 (DesignatorStatementNoActPars) Designator LPAREN RPAREN
+					 |
+					 (DesignatorStatementInc) Designator INC
+					 |
+					 (DesignatorStatementDec) Designator DEC
+					 ;
+
+ActPars ::= (ActPars) Expr ExprList;
+
+ExprList ::= (ExprListParam) ExprList COMMA Expr
+		  |
+		  (ExprListNoParam) /* epsilon */ 
+		  ;
+
+/* CondFact se koristi SAMO kao uslov ternarnog operatora (bez && i ||, videti CondFact "?" Expr ":" Expr) */
+CondFact ::= (CondFactNoRel) ExprArithmetic
+		  |
+		  (CondFactRel) ExprArithmetic Relop ExprArithmetic
+		  ;
+		  
+Expr ::= (ExprA) ExprArithmetic
+	  |
+	  (ExprT) ExprTern
+	  ;
+		
+ExprArithmetic ::= (ExprMinusTerm) MINUS Term:term NegHelper AddopTermList
+	  |
+	  (ExprNoMinusTerm) Term:term AddopTermList
+	  ;
+
+NegHelper ::= (NegHelper) ;
+	  
+	  
+ExprTern ::= (ExprCondFact) CondFact TernHelper Expr TernHelper2 Expr;
+
+TernHelper  ::= (TernHelper)  QUESTION;
+
+TernHelper2 ::= (TernHelper2) COLON;
+	  
+AddopTermList ::= (AddopTermListParam) AddopTermList Addop Term
+				|
+				(AddopTermListNoParam) /* epsilon */
+				;
+		  
+Term ::= (Term) Factor:t MulFactList;
+
+MulFactList ::= (MulFactListParam) MulFactList Mulop Factor
+			 |
+			 (MulFactListNoParam) /* epsilon */
+			 ;
+			 
+Factor ::= (FactorDes) Designator FactDes
+		|
+		(FactorNumConst) NUM_CONST
+		|
+		(FactorCharConst) CHAR_CONST
+		|
+		(FactorBoolConst) BOOL_CONST
+		|
+		(FactorNewNoExpr) NEW Type
+		|
+		(FactorNewExpr) NEW Type LBRACKET Expr RBRACKET
+		|
+		(FactorExpr) LPAREN Expr RPAREN
+		;
+		
+FactDes ::= (FactDesParent) LPAREN ActParentsOpt RPAREN
+		 |
+		 (FactDesNoParent) /* epsilon */
+		 ;
+		 
+ActParentsOpt ::= (ActParsYes) ActPars
+				|
+				(ActParsNo) /* epsilon */
+				;
+
+Designator ::= (DesignatorList) IDENT: name ListIdentLength
+			|
+			(DesignatorIdent) IDENT:name
+			;
+
+/* Napomena: spec za Nivo A kaze "ident ['.'(ident|length) | '['Expr']']" (najvise JEDAN sufiks).
+   Ovde je ostavljena rekurzivna (opstija) forma - sintaksno dozvoljava vise uzastopnih sufiksa,
+   sto ne smeta jer semanticka analiza svakako odbacuje sve sto nije niz osnovnog tipa (nema
+   klasa ni enum-a u Nivou A + Julske izmene, pa "ident.ident" nikad nece proci semantiku). */
+/* findAny je ovde ubacen kao JOS JEDAN nastavak posle DOT (kao i .length), umesto kao
+   posebna Statement produkcija - jer bi posebna Statement produkcija delila isti "Designator DOT"
+   prefiks sa ListIdentLength i pravila shift/reduce konflikt (LALR(1) ne moze da gleda 2 tokena
+   unapred da vidi da li posle DOT ide IDENT/LENGTH ili FINDANY). Ovako je "niz.findAny(30)" prosto
+   Designator sa findAny sufiksom, i prolazi kroz vec postojecu DesignatorStatementAssExpr granu. */
+ListIdentLength ::= (ListIdentLengthIdent) ListIdentLength DOT IDENT
+				 |
+				 (ListIdentLengthLength) ListIdentLength DOT LENGTH
+				 |
+				 (ListIdentLengthExpr) ListIdentLength LBRACKET Expr RBRACKET
+				 |
+				 (LengthIdent) DOT IDENT
+				 |
+				 (LengthLength) DOT LENGTH
+				 |
+				 (LengthExpr) LBRACKET Expr RBRACKET
+				 |
+				 (LengthFindAny) DOT FINDANY LPAREN Expr RPAREN
+				 ;
+				 
+/* ------------------------------------------------------------------------------------------------------------------------------*/
+
+Assignop ::= (Assignop) ASSIGN;
+
+Relop ::= (RelopEq) EQ
+	   |
+	   (RelopNeq) NEQ
+	   |
+	   (RelopGt) GT
+	   |
+	   (RelopGe) GE
+	   |
+	   (RelopLt) LT
+	   |
+	   (RelopLe) LE
+	   ;
+	   
+Addop ::= (AddopPlus) PLUS
+		|
+		(AddopMinus) MINUS
+		;
+
+Mulop ::= (MulopMul) MUL
+		|
+		(MulopDiv) DIV
+		|
+		(MulopMod) MOD
+		;

@@ -1,0 +1,7 @@
+program test_sem_err4
+const int K = 5;
+{
+    void main() {
+        K = 10;
+    }
+}
