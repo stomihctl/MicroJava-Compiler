@@ -8,30 +8,31 @@ Course project for Compiler Construction 1 at the School of Electrical Engineeri
 
 | Phase | Implementation |
 | --- | --- |
-| Lexical analysis | JFlex specification in `src/spec/mjlexer.flex` |
-| Syntax analysis | LALR(1) grammar in `src/spec/mjparser.cup`, processed by AST-CUP, which also generates the abstract syntax tree classes |
-| Semantic analysis | `SemanticAnalyzer`, a visitor over the AST that fills the symbol table and checks the context conditions |
+| Lexical analysis | JFlex specification in `spec/mjlexer.flex` |
+| Syntax analysis | LALR(1) grammar in `spec/mjparser.cup`, processed by AST-CUP, which also generates the abstract syntax tree classes |
+| Semantic analysis | `SemanticPass`, a visitor over the AST that fills the symbol table and checks the context conditions |
 | Code generation | `CodeGenerator`, a visitor over the AST that emits MJVM bytecode into an `.obj` file |
 
 All four phases are started from `rs.ac.bg.etf.pp1.Compiler`.
 
 ## Supported language
 
-- A program with a `main` function, global constants, and global and local variables of type `int`, `char` and `bool`
+- Global constants, enums, and global and local variables of type `int`, `char` and `bool`
 - One-dimensional arrays of built-in types, with `new`, indexing and `length`
 - Assignment, `++` and `--`
 - Arithmetic expressions with `+ - * / %`, unary minus and parentheses
 - Ternary operator with a relational condition, for example `a > b ? a : b`
-- `read` and `print`
+- `read` and `print`, with an optional print width
+- Functions with parameters, including array parameters, and the predeclared `ord`, `chr` and `len`
 - `findAny`, a built-in array search added on top of the base language
 
-Not supported: `if`, `for` and `switch` statements, `break`, `continue` and `return`, the logical operators `&&` and `||`, user-defined functions other than `main`, classes and enums.
+Not supported: `if`, `for` and `switch` statements, `break`, `continue` and `return`, the logical operators `&&` and `||`, and classes.
 
 ### `findAny`
 
 `b = arr.findAny(expr);` sets the `bool` variable `b` to `true` if any element of `arr` equals the value of `expr`, and to `false` otherwise. The array is scanned from the first element to the last.
 
-Adding it touched every phase: a new token in the lexer, a new production in the grammar, semantic checks that the left side is a `bool` variable and the right side is a one-dimensional array of a built-in type, and a generated loop over the array.
+Adding it touched every phase: a new token in the lexer, a new production in the grammar, semantic checks on the array and the argument type, and a generated loop over the array. In the grammar it is a suffix after the dot, like `.length`, which avoids a shift/reduce conflict with the existing designator rules.
 
 ```
 program demo
@@ -50,25 +51,22 @@ program demo
 
 ## Error handling
 
-- **Lexical errors** report the unrecognized text with its line and column, and scanning continues.
-- **Syntax errors** are logged with the line number. The parser recovers and continues for errors in global variable declarations and in assignment statements.
-- **Semantic errors** are reported with the line number and a description. The analyzer also logs every use of a constant, global variable or local variable, and prints the symbol table when it finishes.
+- **Lexical errors** report the unrecognized text with its line, and scanning continues.
+- **Syntax errors** are logged with the line number. The parser recovers and continues for errors in declarations and in statements.
+- **Semantic errors** are reported with the line number and a description. The pass also logs the symbols it finds and prints the symbol table when it finishes.
+
+Code is generated only if the syntax and semantic phases report no errors.
 
 ## Building and running
 
 Requirements: JDK 1.8 and Apache Ant.
 
-`build.xml` generates the lexer and the parser from the specifications and compiles the sources.
+`ant compile` generates the parser and the syntax tree classes from the grammar and compiles the sources. `ant lexerGen` regenerates the lexer.
 
-The compiler takes the source file as the first argument and the output file as the second. The result runs on the VM from `mj-runtime-1.1.jar`:
+The compiler takes the source file as the first argument and the output file as the second. `ant runObj` disassembles and runs `test/program.obj` on the VM from `lib/mj-runtime.jar`.
 
-```
-java -cp "bin;lib/*" rs.ac.bg.etf.pp1.Compiler test/program.mj test/program.obj
-java -cp lib/mj-runtime-1.1.jar rs.etf.pp1.mj.runtime.Run test/program.obj
-```
-
-On Linux and macOS, use `:` instead of `;` in the classpath.
+Test programs are in the `test` folder.
 
 ## Tools
 
-JFlex, AST-CUP, the course symbol table library, and `mj-runtime-1.1.jar`, which provides the code buffer, the disassembler and the VM.
+JFlex, AST-CUP, the course symbol table library, and `mj-runtime.jar`, which provides the code buffer, the disassembler and the VM.
